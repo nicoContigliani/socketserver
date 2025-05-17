@@ -2,11 +2,11 @@ const express = require('express');
 
 const http = require('http');
 const { Server } = require('socket.io');
-const { connectDB, getDB } = require('./db');
-const authRoutes = require('./routes/auth.routes');
+const { connectDB } = require('./db'); // Asegúrate de que connectDB esté exportado correctamenteconst authRoutes = require('./routes/auth.routes');
 
 
 const app = express();
+const PORT = process.env.PORT || 4000;
 
 
 const server = http.createServer(app);
@@ -15,11 +15,16 @@ app.use(express.json()); // Para parsear application/json
 app.use(express.urlencoded({ extended: true })); // Para parsear form data
 // Iniciar conexión a la DB antes del servidor
 // Conectar a DB antes de iniciar el servidor
-connectDB().then(() => {
-  app.listen(PORT, () => {
+connectDB()
+  .then(() => {
+    server.listen(PORT, '0.0.0.0', () => {
       console.log(`Servidor corriendo en puerto ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('Error al conectar a MongoDB:', err);
+    process.exit(1); // Detener la aplicación si no hay conexión a la DB
   });
-});
 
 app.get('/', (req, res) => {
   res.status(200).json({ status: 'OK' });
@@ -32,7 +37,7 @@ app.use('/api/auth', authRoutes);
 const io = new Server(server, {
   cors: {
     origin: "*",
-    methods: ["GET", "POST","PUT","DELETE"]
+    methods: ["GET", "POST", "PUT", "DELETE"]
   },
   connectionStateRecovery: {
     maxDisconnectionDuration: 2 * 60 * 1000,
@@ -140,7 +145,6 @@ io.engine.on('connection_error', (err) => {
   console.error('Error de conexión:', err);
 });
 
-const PORT = process.env.PORT || 4000;
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`Servidor en puerto ${PORT}`);
 });
